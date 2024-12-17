@@ -3,11 +3,11 @@ const app = express();
 import dotenv from 'dotenv';
 dotenv.config();
 const port = process.env.PORT
-import apiRoutes from "./routes/api.js"
+import loadRoutes from './routes/index.js';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/api/v0",apiRoutes)
+loadRoutes(app);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)

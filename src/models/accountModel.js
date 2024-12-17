@@ -52,8 +52,12 @@ class accountModel {
     getOneInformationOfUserById(id) {
         return new Promise((resolve, reject) => {
             this.acc.query(`SELECT * FROM authme WHERE id=${id}`, (err, result) => {
-                if (err) reject(err);
-                resolve(result);
+                if(err) reject(err)
+                if(result.length==0){
+                    resolve({"message":"Không tìm thấy tài khoản"})
+                } else {
+                    resolve(result)
+                }
             });
         });
     }
@@ -132,6 +136,101 @@ class accountModel {
             return { "message": "Có lỗi xảy ra" };  // Nếu có lỗi, trả về thông báo lỗi
         }
     }
+    async updateAccount(id, password, email, lastLogin, roleId) {
+        try {
+            let response = {};
+            let updates = [];
+            let params = []; // Mảng chứa các tham số để truyền vào câu lệnh SQL
+    
+            // Kiểm tra và băm mật khẩu nếu có
+            if (password) {
+                const hashedPassword = await this.computeHash(password);
+                updates.push("password = ?");
+                params.push(hashedPassword);
+            }
+    
+            // Kiểm tra email hợp lệ
+            if (email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                // Kiểm tra tính hợp lệ của email
+                if (!emailRegex.test(email)) {
+                    return { "message": "Email không hợp lệ" };
+                } else {
+                    // Kiểm tra xem email đã tồn tại trong cơ sở dữ liệu chưa
+                    const emailExists = await this.checkIssetEmail(email);
+                    if (emailExists.length > 0) {
+                        return { "message": "Email đã tồn tại" };
+                    } else {
+                        // Nếu email hợp lệ và chưa tồn tại, thêm vào mảng update và params
+                        updates.push("email = ?");
+                        params.push(email);
+                    }
+                }
+            }
+            
+    
+            // Kiểm tra lastLogin là số nguyên
+            if (lastLogin) {
+                if (!Number.isInteger(lastLogin)) {
+                    return { "message": "lastLogin phải là số nguyên" };
+                } else {
+                    updates.push("lastlogin = ?");
+                    params.push(lastLogin);
+                }
+            }
+    
+            // Kiểm tra roleId là số nguyên
+            if (roleId) {
+                if (!Number.isInteger(roleId)) {
+                    return { "message": "roleId phải là số nguyên" };
+                } else {
+                    updates.push("role_id = ?");
+                    params.push(roleId);
+                }
+            }
+    
+            // Nếu không có thông tin nào để cập nhật
+            if (updates.length === 0) {
+                return { "message": "Không có thông tin nào được cập nhật" };
+            }
+    
+            // Tạo câu lệnh SQL
+            const sql = `UPDATE authme SET ${updates.join(', ')} WHERE id = ?`;
+            params.push(id); // Thêm id vào mảng params
+    
+            // Thực hiện câu lệnh SQL
+            await new Promise((resolve, reject) => {
+                this.acc.query(sql, params, (err, result) => {
+                    if (err) {
+                        reject(err); // Nếu có lỗi, reject lỗi
+                    } else {
+                        resolve(result); // Nếu thành công, resolve với kết quả
+                    }
+                });
+            });
+    
+            response = { "message": "Cập nhật tài khoản thành công" };
+            return response;
+        } catch (error) {
+            console.log(error);
+            return { "message": "Có lỗi xảy ra" }; // Nếu có lỗi, trả về thông báo lỗi
+        }
+    }
+    deleteAccount(id){
+        return new Promise((resolve,reject)=>{
+            this.acc.query(`DELETE FROM authme WHERE id=${id}`,(err,result)=>{
+                if (err) {
+                    reject(err); // Nếu có lỗi, reject lỗi
+                } else {
+                    let response = {
+                        "message": "XÓa tài khoản thành công"
+                    }
+                    resolve(response); // Nếu thành công, resolve với kết quả
+                }
+            })
+        })
+    }
+    
 }
 
 export default accountModel;
