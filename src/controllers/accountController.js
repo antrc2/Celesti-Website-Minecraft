@@ -1,24 +1,22 @@
-// accountController.js
 import accountModel from "../models/accountModel.js"
-
 class accountController {
     constructor() {
         this.acc = new accountModel();
     }
+    getInformationOfUser = async (req, res) => {
+        try {
+            let id=0;
+            let username = ""
+            if (typeof req.query.id != 'undefined') {
+                id = req.query.id;
 
-    getAllInformationOfUser = async (req, res) => {
-        try {
-            const usersInfo = await this.acc.getAllInformationOfUsers();
-            res.json(usersInfo);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'An error occurred while fetching user information' });
-        }
-    }
-    getOneInformationOfUser = async (req, res) => {
-        try {
-            const userInfo = await this.acc.getOneInformationOfUserById(req.params.id)
-            res.json(userInfo);
+            }
+            if (typeof req.query.username != "undefined") {
+                username = req.query.username;
+
+            }
+            const usersInfo = await this.acc.getAllInformationOfUsers(id, username)
+            res.json(usersInfo)
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'An error occurred while fetching user information' });
@@ -29,13 +27,13 @@ class accountController {
             const username = req.body.username;
             const password = req.body.password;
             const email = req.body.email;
-            let response = await this.acc.createAccount(username,password,email);
+            let response = await this.acc.createAccount(username, password, email);
             res.json(response)
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'An error occurred while fetching user information' });
         }
-      }
+    }
     updateAccount = async (req, res) => {
         try {
             const id = req.params.id;
@@ -43,14 +41,14 @@ class accountController {
             const email = req.body.email;
             const lastLogin = req.body.lastLogin;
             const roleId = req.body.roleId;
-            let response = await this.acc.updateAccount(id,password,email,lastLogin,roleId);
+            let response = await this.acc.updateAccount(id, password, email, lastLogin, roleId);
             res.json(response)
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'An error occurred while fetching user information' });
         }
     }
-    deleteAccount = async (req,res)=>{
+    deleteAccount = async (req, res) => {
         try {
             const id = req.params.id
             let response = await this.acc.deleteAccount(id);
