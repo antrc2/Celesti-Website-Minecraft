@@ -32,27 +32,27 @@ class accountModel {
             }
         });
     }
-    getAllInformationOfUsers(id,username){
+    getAllInformationOfUsers(id, username) {
         let sql = "SELECT * FROM authme WHERE 1=1 ";
-        if(id != 0){
-            sql+= `and id=${id} `
+        if (id != 0) {
+            sql += `and id=${id} `
         }
-        if(username != ""){
-            sql+= `and realname = '${username}'`;
+        if (username != "") {
+            sql += `and realname = '${username}'`;
         }
-        return new Promise((resolve, reject)=>{
-            this.acc.query(sql,(err, result)=>{
-                if(err) reject(err);
+        return new Promise((resolve, reject) => {
+            this.acc.query(sql, (err, result) => {
+                if (err) reject(err);
                 resolve(result)
-            })   
+            })
         })
     }
     getOneInformationOfUserById(id) {
         return new Promise((resolve, reject) => {
             this.acc.query(`SELECT * FROM authme WHERE id=${id}`, (err, result) => {
-                if(err) reject(err)
-                if(result.length==0){
-                    resolve({"message":"Không tìm thấy tài khoản"})
+                if (err) reject(err)
+                if (result.length == 0) {
+                    resolve({ "message": "Không tìm thấy tài khoản" })
                 } else {
                     resolve(result)
                 }
@@ -60,7 +60,7 @@ class accountModel {
         });
     }
     async getOneInformationOfUserByUsername(username) {
-        return new Promise( async (resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             this.acc.query(`SELECT * FROM authme WHERE realname='${username}'`, (err, result) => {
                 if (err) reject(err);
                 resolve(result);
@@ -77,6 +77,7 @@ class accountModel {
     }
     async createAccount(username, password, email) {
         try {
+            let sql = ""
             let response = {};
             let userInfo = await this.getOneInformationOfUserByUsername(username);
             if (userInfo.length > 0) {
@@ -85,7 +86,11 @@ class accountModel {
                 };
                 return response;
             }
-            if (email !== "") {
+            const hashedPassword = await this.computeHash(password);
+            let regDate = Date.now();
+            let lastLogin = Date.now();
+            let usernameButLowerCase = username.toLowerCase();
+            if (typeof email != "undefined") {
                 let emailInfo = await this.checkIssetEmail(email);
                 if (emailInfo.length > 0) {
                     response = {
@@ -93,29 +98,27 @@ class accountModel {
                     };
                     return response;
                 }
+                sql = `INSERT INTO authme (username, realname, password,email, lastlogin, regdate) VALUES ('${usernameButLowerCase}', '${username}', '${hashedPassword}','${email}', ${lastLogin}, ${regDate})`
+            } else {
+                sql = `INSERT INTO authme (username, realname, password, lastlogin, regdate) VALUES ('${usernameButLowerCase}', '${username}', '${hashedPassword}', ${lastLogin}, ${regDate})`
             }
-            const hashedPassword = await this.computeHash(password);
-            let regDate = Date.now();
-            let lastLogin = Date.now();
-            let usernameButLowerCase = username.toLowerCase();
+
             await new Promise((resolve, reject) => {
-                this.acc.query(
-                    `INSERT INTO authme (username, realname, password,email, lastlogin, regdate) VALUES ('${usernameButLowerCase}', '${username}', '${hashedPassword}','${email}', ${lastLogin}, ${regDate})`,
-                    (err, result) => {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve(result);
-                        }
+                this.acc.query(sql, (err, result) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(result);
                     }
+                }
                 );
             });
             response = {
                 "message": "Tạo tài khoản thành công"
             };
-            return response; 
+            return response;
         } catch (error) {
-            return { "message": "Có lỗi xảy ra" }; 
+            return { "message": "Có lỗi xảy ra" };
         }
     }
     async updateAccount(id, password, email, lastLogin, roleId) {
@@ -179,21 +182,43 @@ class accountModel {
             return { "message": "Có lỗi xảy ra" };
         }
     }
-    deleteAccount(id){
-        return new Promise((resolve,reject)=>{
-            this.acc.query(`DELETE FROM authme WHERE id=${id}`,(err,result)=>{
+    deleteAccount(id) {
+        return new Promise((resolve, reject) => {
+            this.acc.query(`DELETE FROM authme WHERE id=${id}`, (err, result) => {
                 if (err) {
                     reject(err);
                 } else {
                     let response = {
-                        "message": "XÓa tài khoản thành công"
+                        "message": "Xóa tài khoản thành công"
                     }
                     resolve(response);
                 }
             })
         })
     }
-    
+    async login(username, password) {
+        let response = {}
+        const userInfo = await this.getOneInformationOfUserByUsername(username);
+        if (userInfo.length == 0) {
+            response = {
+                "message": "Tài khoản không tồn tại"
+            }
+            return response;
+        } else {
+            let hashedPassword = userInfo[0].password;
+            if (await this.comparePassword(password, hashedPassword)) {
+                response = {
+                    "message": "Đăng nhập thành công"
+                }
+                return response
+            } else {
+                response = {
+                    "message": "Sai mật khẩu"
+                }
+                return response
+            }
+        }
+    }
 }
 
 export default accountModel;

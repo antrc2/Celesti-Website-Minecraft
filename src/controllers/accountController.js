@@ -58,6 +58,25 @@ class accountController {
             res.status(500).json({ error: 'An error occurred while fetching user information' });
         }
     }
+    login = async (req, res) => {
+        try {
+            const username = req.body.username;
+            const password = req.body.password;
+            let response = await this.acc.login(username,password);
+            res.json(response)
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'An error occurred while fetching user information' });
+        }
+    }
+    register = async (req, res) => {
+        try {
+            this.createAccount(req, res);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'An error occurred while fetching user information' });
+        }
+    }
 }
 
 export default accountController;
